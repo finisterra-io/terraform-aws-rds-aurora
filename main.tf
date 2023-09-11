@@ -26,10 +26,10 @@ resource "aws_db_subnet_group" "this" {
   count = local.create && var.create_db_subnet_group ? 1 : 0
 
   name        = local.internal_db_subnet_group_name
-  description = "For Aurora cluster ${var.name}"
+  description = var.db_subnet_group_description
   subnet_ids  = var.subnets
 
-  tags = var.tags
+  tags = var.db_subnet_group_tags
 }
 
 ################################################################################
@@ -127,13 +127,7 @@ resource "aws_rds_cluster" "this" {
   storage_encrypted      = var.storage_encrypted
   storage_type           = var.storage_type
   tags                   = merge(var.tags, var.cluster_tags)
-  vpc_security_group_ids = compact(concat([try(aws_security_group.this[0].id, "")], var.vpc_security_group_ids))
-
-  timeouts {
-    create = try(var.cluster_timeouts.create, null)
-    update = try(var.cluster_timeouts.update, null)
-    delete = try(var.cluster_timeouts.delete, null)
-  }
+  vpc_security_group_ids = var.vpc_security_group_ids
 
   lifecycle {
     ignore_changes = [
@@ -156,11 +150,11 @@ resource "aws_rds_cluster" "this" {
 resource "aws_rds_cluster_instance" "this" {
   for_each = { for k, v in var.instances : k => v if local.create && !local.is_serverless }
 
-  apply_immediately                     = try(each.value.apply_immediately, var.apply_immediately)
-  auto_minor_version_upgrade            = try(each.value.auto_minor_version_upgrade, var.auto_minor_version_upgrade)
-  availability_zone                     = try(each.value.availability_zone, null)
+  apply_immediately          = try(each.value.apply_immediately, var.apply_immediately)
+  auto_minor_version_upgrade = try(each.value.auto_minor_version_upgrade, var.auto_minor_version_upgrade)
+  # availability_zone                     = try(each.value.availability_zone, null)
   ca_cert_identifier                    = var.ca_cert_identifier
-  cluster_identifier                    = aws_rds_cluster.this[0].id
+  cluster_identifier                    = aws_rds_cluster.this[0].cluster_identifier
   copy_tags_to_snapshot                 = try(each.value.copy_tags_to_snapshot, var.copy_tags_to_snapshot)
   db_parameter_group_name               = var.create_db_parameter_group ? aws_db_parameter_group.this[0].id : var.db_parameter_group_name
   db_subnet_group_name                  = local.db_subnet_group_name
@@ -178,13 +172,13 @@ resource "aws_rds_cluster_instance" "this" {
   preferred_maintenance_window = try(each.value.preferred_maintenance_window, var.preferred_maintenance_window)
   promotion_tier               = try(each.value.promotion_tier, null)
   publicly_accessible          = try(each.value.publicly_accessible, var.publicly_accessible)
-  tags                         = merge(var.tags, try(each.value.tags, {}))
+  tags                         = try(each.value.tags, var.tags)
 
-  timeouts {
-    create = try(var.instance_timeouts.create, null)
-    update = try(var.instance_timeouts.update, null)
-    delete = try(var.instance_timeouts.delete, null)
-  }
+  # timeouts {
+  #   create = try(var.instance_timeouts.create, null)
+  #   update = try(var.instance_timeouts.update, null)
+  #   delete = try(var.instance_timeouts.delete, null)
+  # }
 }
 
 ################################################################################
@@ -223,10 +217,10 @@ resource "aws_rds_cluster_role_association" "this" {
 ################################################################################
 
 locals {
-  create_monitoring_role = local.create && var.create_monitoring_role && var.monitoring_interval > 0
+  create_monitoring_role = local.create && var.create_monitoring_role
 }
 
-data "aws_iam_policy_document" "monitoring_rds_assume_role" {
+data "aws_iam_policy_document" "rds_enhanced_monitoring" {
   count = local.create_monitoring_role ? 1 : 0
 
   statement {
@@ -242,26 +236,24 @@ data "aws_iam_policy_document" "monitoring_rds_assume_role" {
 resource "aws_iam_role" "rds_enhanced_monitoring" {
   count = local.create_monitoring_role ? 1 : 0
 
-  name        = var.iam_role_use_name_prefix ? null : var.iam_role_name
-  name_prefix = var.iam_role_use_name_prefix ? "${var.iam_role_name}-" : null
-  description = var.iam_role_description
-  path        = var.iam_role_path
+  name = var.monitoring_role_name
+  # name_prefix          = local.monitoring_role_name_prefix
+  assume_role_policy   = data.aws_iam_policy_document.rds_enhanced_monitoring[0].json
+  description          = var.monitoring_role_description
+  permissions_boundary = var.monitoring_role_permissions_boundary
 
-  assume_role_policy    = data.aws_iam_policy_document.monitoring_rds_assume_role[0].json
-  managed_policy_arns   = var.iam_role_managed_policy_arns
-  permissions_boundary  = var.iam_role_permissions_boundary
-  force_detach_policies = var.iam_role_force_detach_policies
-  max_session_duration  = var.iam_role_max_session_duration
-
-  tags = var.tags
+  tags = merge(
+    var.tags,
+  )
 }
 
 resource "aws_iam_role_policy_attachment" "rds_enhanced_monitoring" {
-  count = local.create_monitoring_role ? 1 : 0
+  count = var.create_monitoring_role ? 1 : 0
 
   role       = aws_iam_role.rds_enhanced_monitoring[0].name
   policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
 }
+
 
 ################################################################################
 # Autoscaling
@@ -273,20 +265,20 @@ resource "aws_appautoscaling_target" "this" {
   max_capacity       = var.autoscaling_max_capacity
   min_capacity       = var.autoscaling_min_capacity
   resource_id        = "cluster:${aws_rds_cluster.this[0].cluster_identifier}"
-  scalable_dimension = "rds:cluster:ReadReplicaCount"
-  service_namespace  = "rds"
+  scalable_dimension = var.scalable_dimension
+  service_namespace  = var.service_namespace
 
-  tags = var.tags
+  tags = var.appautoscaling_target_tags
 }
 
 resource "aws_appautoscaling_policy" "this" {
   count = local.create && var.autoscaling_enabled && !local.is_serverless ? 1 : 0
 
   name               = var.autoscaling_policy_name
-  policy_type        = "TargetTrackingScaling"
+  policy_type        = var.autoscaling_policy_type
   resource_id        = "cluster:${aws_rds_cluster.this[0].cluster_identifier}"
-  scalable_dimension = "rds:cluster:ReadReplicaCount"
-  service_namespace  = "rds"
+  scalable_dimension = var.scalable_dimension
+  service_namespace  = var.service_namespace
 
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification {
@@ -395,7 +387,7 @@ resource "aws_db_parameter_group" "this" {
     create_before_destroy = true
   }
 
-  tags = var.tags
+  tags = var.db_parameter_group_tags
 }
 
 ################################################################################

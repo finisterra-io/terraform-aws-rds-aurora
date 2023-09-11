@@ -169,7 +169,7 @@ variable "final_snapshot_identifier" {
   default     = null
 }
 
-varibable "cluster_identifier" {
+variable "cluster_identifier" {
   description = "The cluster identifier. If omitted, Terraform will assign a random, unique identifier"
   type        = string
   default     = null
@@ -687,6 +687,67 @@ variable "cloudwatch_log_group_retention_in_days" {
 
 variable "cloudwatch_log_group_kms_key_id" {
   description = "The ARN of the KMS Key to use when encrypting log data"
+  type        = string
+  default     = null
+}
+
+variable "db_subnet_group_description" {
+  description = "The description of the DB subnet group"
+  type        = string
+  default     = null
+}
+
+variable "db_subnet_group_tags" {
+  description = "A map of tags to add to the DB subnet group"
+  type        = map(string)
+  default     = {}
+}
+
+variable "db_parameter_group_tags" {
+  description = "A map of tags to add to the DB parameter group"
+  type        = map(string)
+  default     = {}
+}
+
+variable "scalable_dimension" {
+  description = "The scalable dimension for the scalable target"
+  type        = string
+  default     = "rds:cluster:ReadReplicaCount"
+}
+
+variable "service_namespace" {
+  description = "The namespace of the AWS service"
+  type        = string
+  default     = "rds"
+}
+
+variable "appautoscaling_target_tags" {
+  description = "A map of tags to add to the AppAutoScaling target"
+  type        = map(string)
+  default     = {}
+}
+
+variable "autoscaling_policy_type" {
+  description = "The policy type for the autoscaling policy"
+  type        = string
+  default     = "TargetTrackingScaling"
+}
+
+variable "monitoring_role_name" {
+  description = "The name of the monitoring role"
+  type        = string
+  default     = null
+}
+
+
+variable "monitoring_role_description" {
+  description = "The description of the monitoring role"
+  type        = string
+  default     = null
+}
+
+variable "monitoring_role_permissions_boundary" {
+  description = "The ARN of the policy that is used to set the permissions boundary for the monitoring role"
   type        = string
   default     = null
 }
