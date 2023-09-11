@@ -16,6 +16,7 @@ variable "tags" {
   default     = {}
 }
 
+
 ################################################################################
 # DB Subnet Group
 ################################################################################
@@ -164,6 +165,12 @@ variable "engine_version" {
 
 variable "final_snapshot_identifier" {
   description = "The name of your final DB snapshot when this DB cluster is deleted. If omitted, no final snapshot will be made"
+  type        = string
+  default     = null
+}
+
+varibable "cluster_identifier" {
+  description = "The cluster identifier. If omitted, Terraform will assign a random, unique identifier"
   type        = string
   default     = null
 }

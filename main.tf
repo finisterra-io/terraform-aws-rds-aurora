@@ -39,17 +39,17 @@ resource "aws_db_subnet_group" "this" {
 resource "aws_rds_cluster" "this" {
   count = local.create ? 1 : 0
 
-  allocated_storage                   = var.allocated_storage
-  allow_major_version_upgrade         = var.allow_major_version_upgrade
-  apply_immediately                   = var.apply_immediately
-  availability_zones                  = var.availability_zones
-  backup_retention_period             = var.backup_retention_period
-  backtrack_window                    = local.backtrack_window
-  cluster_identifier                  = var.cluster_use_name_prefix ? null : var.name
-  cluster_identifier_prefix           = var.cluster_use_name_prefix ? "${var.name}-" : null
+  allocated_storage           = var.allocated_storage
+  allow_major_version_upgrade = var.allow_major_version_upgrade
+  apply_immediately           = var.apply_immediately
+  availability_zones          = var.availability_zones
+  backup_retention_period     = var.backup_retention_period
+  backtrack_window            = var.backtrack_window
+  cluster_identifier          = var.cluster_identifier
+  # cluster_identifier_prefix           = var.cluster_use_name_prefix ? "${var.name}-" : null
   cluster_members                     = var.cluster_members
   copy_tags_to_snapshot               = var.copy_tags_to_snapshot
-  database_name                       = var.is_primary_cluster ? var.database_name : null
+  database_name                       = var.database_name
   db_cluster_instance_class           = var.db_cluster_instance_class
   db_cluster_parameter_group_name     = var.create_db_cluster_parameter_group ? aws_rds_cluster_parameter_group.this[0].id : var.db_cluster_parameter_group_name
   db_instance_parameter_group_name    = var.allow_major_version_upgrade ? var.db_cluster_db_instance_parameter_group_name : null
@@ -69,7 +69,7 @@ resource "aws_rds_cluster" "this" {
   kms_key_id                    = var.kms_key_id
   manage_master_user_password   = var.global_cluster_identifier == null && var.manage_master_user_password ? var.manage_master_user_password : null
   master_user_secret_kms_key_id = var.global_cluster_identifier == null && var.manage_master_user_password ? var.master_user_secret_kms_key_id : null
-  master_password               = var.is_primary_cluster && !var.manage_master_user_password ? var.master_password : null
+  # master_password               = var.is_primary_cluster && !var.manage_master_user_password ? var.master_password : null
   master_username               = var.is_primary_cluster ? var.master_username : null
   network_type                  = var.network_type
   port                          = local.port
