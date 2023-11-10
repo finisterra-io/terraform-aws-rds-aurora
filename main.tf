@@ -243,9 +243,7 @@ resource "aws_iam_role" "rds_enhanced_monitoring" {
   permissions_boundary = var.monitoring_role_permissions_boundary
   path                 = var.monitoring_role_path
 
-  tags = merge(
-    var.tags,
-  )
+  tags = var.monitoring_role_tags
 }
 
 resource "aws_iam_role_policy_attachment" "rds_enhanced_monitoring" {

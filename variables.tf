@@ -758,3 +758,9 @@ variable "monitoring_role_path" {
   type        = string
   default     = "/"
 }
+
+variable "monitoring_role_tags" {
+  description = "A map of tags to add to the monitoring role"
+  type        = map(string)
+  default     = {}
+}
