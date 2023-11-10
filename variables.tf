@@ -751,3 +751,10 @@ variable "monitoring_role_permissions_boundary" {
   type        = string
   default     = null
 }
+
+
+variable "monitoring_role_path" {
+  description = "The path of the monitoring role"
+  type        = string
+  default     = "/"
+}
