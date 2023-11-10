@@ -764,3 +764,9 @@ variable "monitoring_role_tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "monitoring_role_max_session_duration" {
+  description = "The maximum session duration (in seconds) that you want to set for the monitoring role"
+  type        = number
+  default     = 3600
+}

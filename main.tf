@@ -242,6 +242,7 @@ resource "aws_iam_role" "rds_enhanced_monitoring" {
   description          = var.monitoring_role_description
   permissions_boundary = var.monitoring_role_permissions_boundary
   path                 = var.monitoring_role_path
+  max_session_duration = var.monitoring_role_max_session_duration
 
   tags = var.monitoring_role_tags
 }
