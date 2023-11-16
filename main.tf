@@ -164,7 +164,7 @@ resource "aws_rds_cluster_instance" "this" {
   identifier_prefix                     = var.instances_use_identifier_prefix ? try(each.value.identifier_prefix, "${var.name}-${each.key}-") : null
   instance_class                        = try(each.value.instance_class, var.instance_class)
   monitoring_interval                   = try(each.value.monitoring_interval, var.monitoring_interval)
-  monitoring_role_arn                   = var.create_monitoring_role ? try(aws_iam_role.rds_enhanced_monitoring[0].arn, null) : var.monitoring_role_arn
+  monitoring_role_arn                   = var.monitoring_role_arn
   performance_insights_enabled          = try(each.value.performance_insights_enabled, var.performance_insights_enabled)
   performance_insights_kms_key_id       = try(each.value.performance_insights_kms_key_id, var.performance_insights_kms_key_id)
   performance_insights_retention_period = try(each.value.performance_insights_retention_period, var.performance_insights_retention_period)
@@ -216,43 +216,43 @@ resource "aws_rds_cluster_role_association" "this" {
 # Enhanced Monitoring
 ################################################################################
 
-locals {
-  create_monitoring_role = local.create && var.create_monitoring_role
-}
+# locals {
+#   create_monitoring_role = local.create && var.create_monitoring_role
+# }
 
-data "aws_iam_policy_document" "rds_enhanced_monitoring" {
-  count = local.create_monitoring_role ? 1 : 0
+# data "aws_iam_policy_document" "rds_enhanced_monitoring" {
+#   count = local.create_monitoring_role ? 1 : 0
 
-  statement {
-    actions = ["sts:AssumeRole"]
+#   statement {
+#     actions = ["sts:AssumeRole"]
 
-    principals {
-      type        = "Service"
-      identifiers = ["monitoring.rds.${data.aws_partition.current.dns_suffix}"]
-    }
-  }
-}
+#     principals {
+#       type        = "Service"
+#       identifiers = ["monitoring.rds.${data.aws_partition.current.dns_suffix}"]
+#     }
+#   }
+# }
 
-resource "aws_iam_role" "rds_enhanced_monitoring" {
-  count = local.create_monitoring_role ? 1 : 0
+# resource "aws_iam_role" "rds_enhanced_monitoring" {
+#   count = local.create_monitoring_role ? 1 : 0
 
-  name = var.monitoring_role_name
-  # name_prefix          = local.monitoring_role_name_prefix
-  assume_role_policy   = data.aws_iam_policy_document.rds_enhanced_monitoring[0].json
-  description          = var.monitoring_role_description
-  permissions_boundary = var.monitoring_role_permissions_boundary
-  path                 = var.monitoring_role_path
-  max_session_duration = var.monitoring_role_max_session_duration
+#   name = var.monitoring_role_name
+#   # name_prefix          = local.monitoring_role_name_prefix
+#   assume_role_policy   = data.aws_iam_policy_document.rds_enhanced_monitoring[0].json
+#   description          = var.monitoring_role_description
+#   permissions_boundary = var.monitoring_role_permissions_boundary
+#   path                 = var.monitoring_role_path
+#   max_session_duration = var.monitoring_role_max_session_duration
 
-  tags = var.monitoring_role_tags
-}
+#   tags = var.monitoring_role_tags
+# }
 
-resource "aws_iam_role_policy_attachment" "rds_enhanced_monitoring" {
-  count = var.create_monitoring_role ? 1 : 0
+# resource "aws_iam_role_policy_attachment" "rds_enhanced_monitoring" {
+#   count = var.create_monitoring_role ? 1 : 0
 
-  role       = aws_iam_role.rds_enhanced_monitoring[0].name
-  policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
-}
+#   role       = aws_iam_role.rds_enhanced_monitoring[0].name
+#   policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
+# }
 
 
 ################################################################################
